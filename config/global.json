@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "Through": {
+            "applicationId": "13M9oMhAklF3jK9XjjVZ8cHa4qOwQZqYFM6CiXLL", 
+            "masterKey": "hx0Ep0FetJX185Jl09CvGDD0RYW3UNhIaycVHnZ6"
+        }, 
+        "_default": {
+            "link": "Through"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.2.18"
+    }
+}
