@@ -12,7 +12,8 @@ function isEmpty(obj) {
   return true;
 }
 
-function generateTwitterFeed(user, success, error) {
+function generateTwitterFeed(user) {
+  var promise = new Parse.Promise();
   var TwitterMedia = Parse.Object.extend("TwitterMedia");
   var query = new Parse.Query(TwitterMedia)
   query.equalTo("user", user);
@@ -108,29 +109,31 @@ function generateTwitterFeed(user, success, error) {
                 }
               });
               Parse.Object.saveAll(objs).then(function(objs) {
-                success(objs);
+                promise.resolve(objs);
               }, function(error) {
                 console.log(error);
-                error("Uh oh, something went wrong.");
+                promise.reject(error);
               });
             },
             error: function(httpResponse) {
-              console.log('Request failed with response ' + httpResponse.status + ' , ' + httpResponse.text);
-              error("Uh oh, something went wrong.");
+              var error = 'Request failed with response ' + httpResponse.status + ' , ' + httpResponse.text;
+              console.log(error);
+              error(error);
             }
           });
         },
         error: function(error) {
           console.log(error);
-          error("Uh oh, something went wrong.");
+          promise.reject(error);
         }
       });
     },
-    error: function(object) {
+    error: function(error) {
       console.log(error);
-      error("Uh oh, something went wrong.");
+      promise.reject(error);
     }
-  })
+  });
+  return promise;
 }
 
 Parse.Cloud.define("generateFeedsForUser", function(request, response) {
@@ -139,8 +142,8 @@ Parse.Cloud.define("generateFeedsForUser", function(request, response) {
   var query = new Parse.Query(Parse.User);
   query.equalTo("username", username);
   query.first(function(user) {
-    generateTwitterFeed(user, function(feeds) {
-      response.success(feeds);
+    generateTwitterFeed(user).then(function(objs) {
+      response.success(objs);
     }, function(error) {
       response.error(error);
     });
@@ -151,9 +154,11 @@ Parse.Cloud.job("generateFeeds", function(request, status) {
   Parse.Cloud.useMasterKey();
   var query = new Parse.Query(Parse.User);
   query.each(function(user) {
-    generateTwitterFeed(user, null, function(error) {
+    generateTwitterFeed(user, function(feeds) {
+      console.log('Feeds generated for ' + user.get("username"));
+    }, function(error) {
       status.error(error);
-    })
+    });
   });
   status.success("Feeds generated successfully.");
 });
