@@ -18,6 +18,7 @@ function generateTwitterFeed(user) {
   var Media = Parse.Object.extend("Media");
   var query = new Parse.Query(Media)
   query.equalTo("user", user);
+  query.equalTo("type", 1);
   query.descending("sinceId");
   query.first({
     success: function(fetchedMedia) {
@@ -102,6 +103,7 @@ function generateTwitterFeed(user) {
                       media.set("userName", tweetUser["name"]);
                       media.set("sinceId", tweet["id"]);
                       media.set("user", user);
+                      media.set("type", 1);
                       var date = new Date(tweet["created_at"]);
                       media.set("mediaDate", date);
                       objs.push(media);
