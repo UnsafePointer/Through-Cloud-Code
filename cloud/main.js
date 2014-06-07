@@ -1,6 +1,7 @@
 var oauth = require('cloud/oauth.js');
 var sha = require('cloud/sha1.js');
 var hasOwnProperty = Object.prototype.hasOwnProperty;
+var _ = require('underscore');
 
 function isEmpty(obj) {
   if (obj == null) return true;
@@ -111,25 +112,25 @@ function generateTwitterFeed(user) {
               Parse.Object.saveAll(objs).then(function(objs) {
                 promise.resolve(objs);
               }, function(error) {
-                console.log(error);
+                console.error(error);
                 promise.reject(error);
               });
             },
             error: function(httpResponse) {
               var error = 'Request failed with response ' + httpResponse.status + ' , ' + httpResponse.text;
-              console.log(error);
-              error(error);
+              console.error(error);
+              promise(error);
             }
           });
         },
         error: function(error) {
-          console.log(error);
+          console.error(error);
           promise.reject(error);
         }
       });
     },
     error: function(error) {
-      console.log(error);
+      console.error(error);
       promise.reject(error);
     }
   });
@@ -153,12 +154,19 @@ Parse.Cloud.define("generateFeedsForUser", function(request, response) {
 Parse.Cloud.job("generateFeeds", function(request, status) {
   Parse.Cloud.useMasterKey();
   var query = new Parse.Query(Parse.User);
-  query.each(function(user) {
-    generateTwitterFeed(user, function(feeds) {
-      console.log('Feeds generated for ' + user.get("username"));
-    }, function(error) {
-      status.error(error);
+  query.find().then(function(users) {
+    var promises = [];
+    _.each(users, function(user) {
+      promises.push(generateTwitterFeed(user));
     });
+    return Parse.Promise.when(promises);
+  }, function(error) {
+    console.error(error);
+    status.error(error);
+  }).then(function() {
+    status.success("Feeds generated successfully.");
+  }, function(error) {
+    console.error(error);
+    status.error(error);
   });
-  status.success("Feeds generated successfully.");
 });
