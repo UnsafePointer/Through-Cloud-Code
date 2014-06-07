@@ -15,12 +15,12 @@ function isEmpty(obj) {
 
 function generateTwitterFeed(user) {
   var promise = new Parse.Promise();
-  var TwitterMedia = Parse.Object.extend("TwitterMedia");
-  var query = new Parse.Query(TwitterMedia)
+  var Media = Parse.Object.extend("Media");
+  var query = new Parse.Query(Media)
   query.equalTo("user", user);
-  query.descending("tweetID");
+  query.descending("sinceId");
   query.first({
-    success: function(fetchedTwitterMedia) {
+    success: function(fetchedMedia) {
       var TwitterOAuth = Parse.Object.extend("TwitterOAuth");
       var query = new Parse.Query(TwitterOAuth);
       query.equalTo("user", user);
@@ -50,8 +50,8 @@ function generateTwitterFeed(user) {
             "oauth_nonce": nonce,
             "oauth_signature_method": "HMAC-SHA1"
           };
-          if (!isEmpty(fetchedTwitterMedia)) {
-            params["since_id"] = fetchedTwitterMedia.get("tweetID");
+          if (!isEmpty(fetchedMedia)) {
+            params["since_id"] = fetchedMedia.get("sinceId");
           }
           var message = {
             "method": "GET",
@@ -69,8 +69,8 @@ function generateTwitterFeed(user) {
             exclude_replies: true,
             contributor_details: false
           };
-          if (!isEmpty(fetchedTwitterMedia)) {
-            requestParams["since_id"] = fetchedTwitterMedia.get("tweetID");
+          if (!isEmpty(fetchedMedia)) {
+            requestParams["since_id"] = fetchedMedia.get("sinceId");
           }
 
           Parse.Cloud.httpRequest({
@@ -85,8 +85,8 @@ function generateTwitterFeed(user) {
             success: function(httpResponse) {
               var objs = [];
               httpResponse.data.forEach(function(tweet) {
-                if (!isEmpty(fetchedTwitterMedia)) {
-                  if (tweet["id"] == fetchedTwitterMedia.get("tweetID")) {
+                if (!isEmpty(fetchedMedia)) {
+                  if (tweet["id"] == fetchedMedia.get("sinceId")) {
                     return;
                   }
                 }
@@ -96,15 +96,15 @@ function generateTwitterFeed(user) {
                   var media = entities["media"];
                   if (!isEmpty(media)) {
                     media.forEach(function(photo) {
-                      var twitterMedia = new TwitterMedia();
-                      twitterMedia.set("url", photo["media_url"]);
-                      twitterMedia.set("text", tweet["text"]);
-                      twitterMedia.set("userName", tweetUser["name"]);
-                      twitterMedia.set("tweetID", tweet["id"]);
-                      twitterMedia.set("user", user);
+                      var media = new Media();
+                      media.set("url", photo["media_url"]);
+                      media.set("text", tweet["text"]);
+                      media.set("userName", tweetUser["name"]);
+                      media.set("sinceId", tweet["id"]);
+                      media.set("user", user);
                       var date = new Date(tweet["created_at"]);
-                      twitterMedia.set("mediaDate", date);
-                      objs.push(twitterMedia);
+                      media.set("mediaDate", date);
+                      objs.push(media);
                     });
                   }
                 }
@@ -134,6 +134,12 @@ function generateTwitterFeed(user) {
       promise.reject(error);
     }
   });
+  return promise;
+}
+
+function generateFacebookFeed(user) {
+  var promise = new Parse.Promise();
+  promise.resolve();
   return promise;
 }
 
