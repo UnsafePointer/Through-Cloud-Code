@@ -288,6 +288,128 @@ function generateFacebookFeed(user) {
   return promise;
 }
 
+Parse.Cloud.define("disconnectTwitterForUser", function(request, response) {
+  Parse.Cloud.useMasterKey();
+  var username = request.params.username;
+  var query = new Parse.Query(Parse.User);
+  query.equalTo("username", username);
+  query.first(function(user) {
+    var Media = Parse.Object.extend("Media");
+    var query = new Parse.Query(Media)
+    query.equalTo("user", user);
+    query.equalTo("type", 1);
+    query.find({
+      success: function(results) {
+        var promises = [];
+        _.each(results, function(media) {
+          promises.push(media.destroy());
+        });
+        Parse.Promise.when(promises).then(function() {
+          var TwitterOAuth = Parse.Object.extend("TwitterOAuth");
+          var query = new Parse.Query(TwitterOAuth);
+          query.equalTo("user", user);
+          query.find({
+            success: function(results) {
+              var OAuth = results[0];
+              OAuth.destroy({
+                success: function(OAuth) {
+                  user.save({
+                    isTwitterServiceConnected: false
+                  }, {
+                    success: function(user) {
+                      response.success();
+                    },
+                    error: function(user, error) {
+                      console.error(error);
+                      response.error(error);
+                    }
+                  });
+                },
+                error: function(OAuth, error) {
+                  console.error(error);
+                  response.error(error);
+                }
+              });
+            },
+            error: function(error) {
+              console.error(error);
+              response.error(error);
+            }
+          });
+        }, function(error) {
+          console.error(error);
+          response.error(error);
+        });
+      },
+      error: function(error) {
+        console.error(error);
+        response.error(error);
+      }
+    });
+  });
+});
+
+Parse.Cloud.define("disconnectFacebookForUser", function(request, response) {
+  Parse.Cloud.useMasterKey();
+  var username = request.params.username;
+  var query = new Parse.Query(Parse.User);
+  query.equalTo("username", username);
+  query.first(function(user) {
+    var Media = Parse.Object.extend("Media");
+    var query = new Parse.Query(Media)
+    query.equalTo("user", user);
+    query.equalTo("type", 2);
+    query.find({
+      success: function(results) {
+        var promises = [];
+        _.each(results, function(media) {
+          promises.push(media.destroy());
+        });
+        Parse.Promise.when(promises).then(function() {
+          var FacebookOAuth = Parse.Object.extend("FacebookOAuth");
+          var query = new Parse.Query(FacebookOAuth);
+          query.equalTo("user", user);
+          query.find({
+            success: function(results) {
+              var OAuth = results[0];
+              OAuth.destroy({
+                success: function(OAuth) {
+                  user.save({
+                    isFacebookServiceConnected: false
+                  }, {
+                    success: function(user) {
+                      response.success();
+                    },
+                    error: function(user, error) {
+                      console.error(error);
+                      response.error(error);
+                    }
+                  });
+                },
+                error: function(OAuth, error) {
+                  console.error(error);
+                  response.error(error);
+                }
+              });
+            },
+            error: function(error) {
+              console.error(error);
+              response.error(error);
+            }
+          });
+        }, function(error) {
+          console.error(error);
+          response.error(error);
+        });
+      },
+      error: function(error) {
+        console.error(error);
+        response.error(error);
+      }
+    });
+  });
+});
+
 Parse.Cloud.define("generateFeedsForUser", function(request, response) {
   Parse.Cloud.useMasterKey();
   var username = request.params.username;
