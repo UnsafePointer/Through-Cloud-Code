@@ -27,103 +27,107 @@ function generateTwitterFeed(user) {
       query.equalTo("user", user);
       query.find({
         success: function(results) {
-          var OAuth = results[0];
-          var urlLink = 'https://api.twitter.com/1.1/statuses/home_timeline.json';
-          var consumerSecret = "kNyT6OtLzNYB9uspygHnhWx11nXXs0oDDf9rD5E2RkzlW6EFPo";
-          var tokenSecret = OAuth.get("secret");
-          var oauth_consumer_key = "K7G3qi30RXciGattuJ1cBdoNG";
-          var oauth_token = OAuth.get("token");
-          var nonce = oauth.nonce(32);
-          var ts = Math.floor(new Date().getTime() / 1000);
-          var timestamp = ts.toString();
-          var accessor = {
-            "consumerSecret": consumerSecret,
-            "tokenSecret": tokenSecret
-          };
-          var params = {
-            "count": 200,
-            "exclude_replies": true,
-            "contributor_details": false,
-            "oauth_version": "1.0",
-            "oauth_consumer_key": oauth_consumer_key,
-            "oauth_token": oauth_token,
-            "oauth_timestamp": timestamp,
-            "oauth_nonce": nonce,
-            "oauth_signature_method": "HMAC-SHA1"
-          };
-          if (!isEmpty(fetchedMedia)) {
-            params["since_id"] = fetchedMedia.get("sinceId");
-          }
-          var message = {
-            "method": "GET",
-            "action": urlLink,
-            "parameters": params
-          };
-          oauth.SignatureMethod.sign(message, accessor);
-          var normPar = oauth.SignatureMethod.normalizeParameters(message.parameters);
-          var baseString = oauth.SignatureMethod.getBaseString(message);
-          var sig = oauth.getParameter(message.parameters, "oauth_signature") + "=";
-          var encodedSig = oauth.percentEncode(sig);
-          var header = 'OAuth oauth_consumer_key="' + oauth_consumer_key + '", oauth_nonce="' + nonce + '", oauth_signature="' + encodedSig + '", oauth_signature_method="HMAC-SHA1", oauth_timestamp="' + timestamp + '", oauth_token="' + oauth_token + '", oauth_version="1.0"';
-          var requestParams = {
-            count: 200,
-            exclude_replies: true,
-            contributor_details: false
-          };
-          if (!isEmpty(fetchedMedia)) {
-            requestParams["since_id"] = fetchedMedia.get("sinceId");
-          }
+          if (isEmpty(results)) {
+            promise.resolve([]);
+          } else {
+            var OAuth = results[0];
+            var urlLink = 'https://api.twitter.com/1.1/statuses/home_timeline.json';
+            var consumerSecret = "kNyT6OtLzNYB9uspygHnhWx11nXXs0oDDf9rD5E2RkzlW6EFPo";
+            var tokenSecret = OAuth.get("secret");
+            var oauth_consumer_key = "K7G3qi30RXciGattuJ1cBdoNG";
+            var oauth_token = OAuth.get("token");
+            var nonce = oauth.nonce(32);
+            var ts = Math.floor(new Date().getTime() / 1000);
+            var timestamp = ts.toString();
+            var accessor = {
+              "consumerSecret": consumerSecret,
+              "tokenSecret": tokenSecret
+            };
+            var params = {
+              "count": 200,
+              "exclude_replies": true,
+              "contributor_details": false,
+              "oauth_version": "1.0",
+              "oauth_consumer_key": oauth_consumer_key,
+              "oauth_token": oauth_token,
+              "oauth_timestamp": timestamp,
+              "oauth_nonce": nonce,
+              "oauth_signature_method": "HMAC-SHA1"
+            };
+            if (!isEmpty(fetchedMedia)) {
+              params["since_id"] = fetchedMedia.get("sinceId");
+            }
+            var message = {
+              "method": "GET",
+              "action": urlLink,
+              "parameters": params
+            };
+            oauth.SignatureMethod.sign(message, accessor);
+            var normPar = oauth.SignatureMethod.normalizeParameters(message.parameters);
+            var baseString = oauth.SignatureMethod.getBaseString(message);
+            var sig = oauth.getParameter(message.parameters, "oauth_signature") + "=";
+            var encodedSig = oauth.percentEncode(sig);
+            var header = 'OAuth oauth_consumer_key="' + oauth_consumer_key + '", oauth_nonce="' + nonce + '", oauth_signature="' + encodedSig + '", oauth_signature_method="HMAC-SHA1", oauth_timestamp="' + timestamp + '", oauth_token="' + oauth_token + '", oauth_version="1.0"';
+            var requestParams = {
+              count: 200,
+              exclude_replies: true,
+              contributor_details: false
+            };
+            if (!isEmpty(fetchedMedia)) {
+              requestParams["since_id"] = fetchedMedia.get("sinceId");
+            }
 
-          Parse.Cloud.httpRequest({
-            method: 'GET',
-            url: urlLink,
-            headers: {
-              "Authorization": header
-            },
-            params: requestParams,
-            body: {
-            },
-            success: function(httpResponse) {
-              var objs = [];
-              httpResponse.data.forEach(function(tweet) {
-                if (!isEmpty(fetchedMedia)) {
-                  if (tweet["id"] == fetchedMedia.get("sinceId")) {
-                    return;
+            Parse.Cloud.httpRequest({
+              method: 'GET',
+              url: urlLink,
+              headers: {
+                "Authorization": header
+              },
+              params: requestParams,
+              body: {
+              },
+              success: function(httpResponse) {
+                var objs = [];
+                httpResponse.data.forEach(function(tweet) {
+                  if (!isEmpty(fetchedMedia)) {
+                    if (tweet["id"] == fetchedMedia.get("sinceId")) {
+                      return;
+                    }
                   }
-                }
-                var tweetUser = tweet["user"];
-                var entities = tweet["entities"];
-                if (!isEmpty(entities)) {
-                  var media = entities["media"];
-                  if (!isEmpty(media)) {
-                    media.forEach(function(photo) {
-                      var media = new Media();
-                      media.set("url", photo["media_url"]);
-                      media.set("text", tweet["text"]);
-                      media.set("userName", tweetUser["name"]);
-                      media.set("sinceId", tweet["id"]);
-                      media.set("user", user);
-                      media.set("type", 1);
-                      var date = new Date(tweet["created_at"]);
-                      media.set("mediaDate", date);
-                      objs.push(media);
-                    });
+                  var tweetUser = tweet["user"];
+                  var entities = tweet["entities"];
+                  if (!isEmpty(entities)) {
+                    var media = entities["media"];
+                    if (!isEmpty(media)) {
+                      media.forEach(function(photo) {
+                        var media = new Media();
+                        media.set("url", photo["media_url"]);
+                        media.set("text", tweet["text"]);
+                        media.set("userName", tweetUser["name"]);
+                        media.set("sinceId", tweet["id"]);
+                        media.set("user", user);
+                        media.set("type", 1);
+                        var date = new Date(tweet["created_at"]);
+                        media.set("mediaDate", date);
+                        objs.push(media);
+                      });
+                    }
                   }
-                }
-              });
-              Parse.Object.saveAll(objs).then(function(objs) {
-                promise.resolve(objs);
-              }, function(error) {
+                });
+                Parse.Object.saveAll(objs).then(function(objs) {
+                  promise.resolve(objs);
+                }, function(error) {
+                  console.error(error);
+                  promise.reject(error);
+                });
+              },
+              error: function(httpResponse) {
+                var error = 'Request failed with response ' + httpResponse.status + ' , ' + httpResponse.text;
                 console.error(error);
                 promise.reject(error);
-              });
-            },
-            error: function(httpResponse) {
-              var error = 'Request failed with response ' + httpResponse.status + ' , ' + httpResponse.text;
-              console.error(error);
-              promise.reject(error);
-            }
-          });
+              }
+            });
+          }
         },
         error: function(error) {
           console.error(error);
@@ -192,79 +196,83 @@ function generateFacebookFeed(user) {
       query.equalTo("user", user);
       query.find({
         success: function(results) {
-          var OAuth = results[0];
-          var oauth_token = OAuth.get("token");
-          var URL = 'https://graph.facebook.com/fql?q=';
-          if (!isEmpty(fetchedMedia)) {
-            URL = URL + encodeURIComponent('{media: \'SELECT actor_id, created_time, likes, post_id, attachment FROM stream WHERE created_time >' + fetchedMedia.get('sinceId') + ' AND filter_key IN ( SELECT filter_key FROM stream_filter WHERE uid = me() AND (name = "Photos"))\',users: \'SELECT id, name, url, pic FROM profile WHERE id IN (SELECT actor_id FROM #media)\'}');
+          if (isEmpty(results)) {
+            promise.resolve([]);
           } else {
-            URL = URL + encodeURIComponent('{media: \'SELECT actor_id, created_time, likes, post_id, attachment FROM stream WHERE filter_key IN ( SELECT filter_key FROM stream_filter WHERE uid = me() AND (name = "Photos"))\',users: \'SELECT id, name, url, pic FROM profile WHERE id IN (SELECT actor_id FROM #media)\'}');
-          }
-          URL = URL + '&access_token=' + oauth_token;
-          Parse.Cloud.httpRequest({
-            method: 'GET',
-            url: URL,
-            success: function(httpResponse) {
-              var data = httpResponse.data['data'];
-              var mediaFeed = data[0];
-              var usersFeed = data[1];
-              var fbids = [];
-              var objs = [];
-              mediaFeed['fql_result_set'].forEach(function(feed) {
-                var attachment = feed['attachment'];
-                if (!isEmpty(attachment)) {
-                  var mediaProperty = attachment['media'];
-                  if (!isEmpty(mediaProperty)) {
-                    mediaProperty.forEach(function(mediaPropertyItem) {
-                      var photo = mediaPropertyItem['photo'];
-                      if (!isEmpty(photo)) {
-                        var media = new Media();
-                        media.set("url", photo['fbid']);
-                        media.set("text", mediaPropertyItem["alt"]);
-                        var uid = feed['actor_id'];
-                        usersFeed['fql_result_set'].forEach(function(userFeed) {
-                          if (uid == userFeed['id']) {
-                            media.set("userName", userFeed["name"]);
-                          }
-                        });
-                        media.set("sinceId", feed["created_time"]);
-                        media.set("user", user);
-                        media.set("type", 2);
-                        var created_time = feed["created_time"];
-                        var date = new Date(created_time * 1000);
-                        media.set("mediaDate", date);
-                        objs.push(media);
-                      }
-                    });
+            var OAuth = results[0];
+            var oauth_token = OAuth.get("token");
+            var URL = 'https://graph.facebook.com/fql?q=';
+            if (!isEmpty(fetchedMedia)) {
+              URL = URL + encodeURIComponent('{media: \'SELECT actor_id, created_time, likes, post_id, attachment FROM stream WHERE created_time >' + fetchedMedia.get('sinceId') + ' AND filter_key IN ( SELECT filter_key FROM stream_filter WHERE uid = me() AND (name = "Photos"))\',users: \'SELECT id, name, url, pic FROM profile WHERE id IN (SELECT actor_id FROM #media)\'}');
+            } else {
+              URL = URL + encodeURIComponent('{media: \'SELECT actor_id, created_time, likes, post_id, attachment FROM stream WHERE filter_key IN ( SELECT filter_key FROM stream_filter WHERE uid = me() AND (name = "Photos"))\',users: \'SELECT id, name, url, pic FROM profile WHERE id IN (SELECT actor_id FROM #media)\'}');
+            }
+            URL = URL + '&access_token=' + oauth_token;
+            Parse.Cloud.httpRequest({
+              method: 'GET',
+              url: URL,
+              success: function(httpResponse) {
+                var data = httpResponse.data['data'];
+                var mediaFeed = data[0];
+                var usersFeed = data[1];
+                var fbids = [];
+                var objs = [];
+                mediaFeed['fql_result_set'].forEach(function(feed) {
+                  var attachment = feed['attachment'];
+                  if (!isEmpty(attachment)) {
+                    var mediaProperty = attachment['media'];
+                    if (!isEmpty(mediaProperty)) {
+                      mediaProperty.forEach(function(mediaPropertyItem) {
+                        var photo = mediaPropertyItem['photo'];
+                        if (!isEmpty(photo)) {
+                          var media = new Media();
+                          media.set("url", photo['fbid']);
+                          media.set("text", mediaPropertyItem["alt"]);
+                          var uid = feed['actor_id'];
+                          usersFeed['fql_result_set'].forEach(function(userFeed) {
+                            if (uid == userFeed['id']) {
+                              media.set("userName", userFeed["name"]);
+                            }
+                          });
+                          media.set("sinceId", feed["created_time"]);
+                          media.set("user", user);
+                          media.set("type", 2);
+                          var created_time = feed["created_time"];
+                          var date = new Date(created_time * 1000);
+                          media.set("mediaDate", date);
+                          objs.push(media);
+                        }
+                      });
+                    }
                   }
-                }
-              });
-              Parse.Object.saveAll(objs).then(function(objs) {
-                var promises = [];
-                _.each(objs, function(obj) {
-                  promises.push(updateFacebookMediaURL(OAuth, obj));
                 });
-                Parse.Promise.when(promises).then(function() {
-                  var filtered = _.reject(objs, function(obj) {
-                    var res = obj.get('url').substring(0, 5);
-                    return res != 'http';
+                Parse.Object.saveAll(objs).then(function(objs) {
+                  var promises = [];
+                  _.each(objs, function(obj) {
+                    promises.push(updateFacebookMediaURL(OAuth, obj));
                   });
-                  promise.resolve(filtered);
+                  Parse.Promise.when(promises).then(function() {
+                    var filtered = _.reject(objs, function(obj) {
+                      var res = obj.get('url').substring(0, 5);
+                      return res != 'https';
+                    });
+                    promise.resolve(filtered);
+                  }, function(error) {
+                    console.error(error);
+                    promise.reject(error);
+                  });
                 }, function(error) {
                   console.error(error);
                   promise.reject(error);
                 });
-              }, function(error) {
+              },
+              error: function(httpResponse) {
+                var error = 'Request failed with response ' + httpResponse.status + ' , ' + httpResponse.text;
                 console.error(error);
                 promise.reject(error);
-              });
-            },
-            error: function(httpResponse) {
-              var error = 'Request failed with response ' + httpResponse.status + ' , ' + httpResponse.text;
-              console.error(error);
-              promise.reject(error);
-            }
-          });
+              }
+            });
+          }
         },
         error: function(error) {
           console.error(error);
@@ -286,9 +294,35 @@ Parse.Cloud.define("generateFeedsForUser", function(request, response) {
   var query = new Parse.Query(Parse.User);
   query.equalTo("username", username);
   query.first(function(user) {
-    generateFacebookFeed(user).then(function(objs) {
-      response.success(objs);
+    var promises = [];
+    var feeds = [];
+    var facebookFeed = generateFacebookFeed(user);
+    facebookFeed.then(function(objs) {
+      feeds = feeds.concat(objs);
     }, function(error) {
+      console.error(error);
+      response.error(error);
+    });
+    promises.push(facebookFeed);
+    var twitterFeed = generateTwitterFeed(user);
+    twitterFeed.then(function(objs) {
+      feeds = feeds.concat(objs);
+    }, function(error) {
+      console.error(error);
+      response.error(error);
+    });
+    promises.push(twitterFeed);
+    Parse.Promise.when(promises).then(function() {
+      feeds.sort(function(a,b) {
+        var date1 = a.get('mediaDate');
+        var date2 = b.get('mediaDate');
+        if (date1 > date2) return -1;
+        if (date1 < date2) return 1;
+        return 0;
+      });
+      response.success(feeds);
+    }, function(error) {
+      console.error(error);
       response.error(error);
     });
   });
