@@ -201,66 +201,35 @@ function generateFacebookFeed(user) {
           } else {
             var OAuth = results[0];
             var oauth_token = OAuth.get("token");
-            var URL = 'https://graph.facebook.com/fql?q=';
+            var URL = 'https://graph.facebook.com/v2.0/me/photos?';
             if (!isEmpty(fetchedMedia)) {
-              URL = URL + encodeURIComponent('{media: \'SELECT actor_id, created_time, likes, post_id, attachment FROM stream WHERE created_time >' + fetchedMedia.get('sinceId') + ' AND filter_key IN ( SELECT filter_key FROM stream_filter WHERE uid = me() AND (name = "Photos"))\',users: \'SELECT id, name, url, pic FROM profile WHERE id IN (SELECT actor_id FROM #media)\'}');
+              URL = URL + encodeURIComponent('fields=source,from,name,created_time') + '&since=' + fetchedMedia.get('sinceId');
             } else {
-              URL = URL + encodeURIComponent('{media: \'SELECT actor_id, created_time, likes, post_id, attachment FROM stream WHERE filter_key IN ( SELECT filter_key FROM stream_filter WHERE uid = me() AND (name = "Photos"))\',users: \'SELECT id, name, url, pic FROM profile WHERE id IN (SELECT actor_id FROM #media)\'}');
+              URL = URL + encodeURIComponent('fields=source,from,name,created_time');
             }
             URL = URL + '&access_token=' + oauth_token;
+            console.log(URL);
             Parse.Cloud.httpRequest({
               method: 'GET',
               url: URL,
               success: function(httpResponse) {
                 var data = httpResponse.data['data'];
-                var mediaFeed = data[0];
-                var usersFeed = data[1];
-                var fbids = [];
                 var objs = [];
-                mediaFeed['fql_result_set'].forEach(function(feed) {
-                  var attachment = feed['attachment'];
-                  if (!isEmpty(attachment)) {
-                    var mediaProperty = attachment['media'];
-                    if (!isEmpty(mediaProperty)) {
-                      mediaProperty.forEach(function(mediaPropertyItem) {
-                        var photo = mediaPropertyItem['photo'];
-                        if (!isEmpty(photo)) {
-                          var media = new Media();
-                          media.set("url", photo['fbid']);
-                          media.set("text", mediaPropertyItem["alt"]);
-                          var uid = feed['actor_id'];
-                          usersFeed['fql_result_set'].forEach(function(userFeed) {
-                            if (uid == userFeed['id']) {
-                              media.set("userName", userFeed["name"]);
-                            }
-                          });
-                          media.set("sinceId", feed["created_time"]);
-                          media.set("user", user);
-                          media.set("type", 2);
-                          var created_time = feed["created_time"];
-                          var date = new Date(created_time * 1000);
-                          media.set("mediaDate", date);
-                          objs.push(media);
-                        }
-                      });
-                    }
-                  }
+                data.forEach(function(photo) {
+                  var media = new Media();
+                  media.set("url", photo['source']);
+                  media.set("text", photo['name']);
+                  media.set("userName", photo['from']['name']);
+                  media.set("user", user);
+                  media.set("type", 2);
+                  var created_time = photo["created_time"];
+                  var date = new Date(created_time);
+                  media.set("mediaDate", date);
+                  media.set("sinceId", date.getTime() / 1000);
+                  objs.push(media);
                 });
                 Parse.Object.saveAll(objs).then(function(objs) {
-                  var promises = [];
-                  _.each(objs, function(obj) {
-                    promises.push(updateFacebookMediaURL(OAuth, obj));
-                  });
-                  Parse.Promise.when(promises).then(function() {
-                    var filtered = _.reject(objs, function(obj) {
-                      var res = obj.get('url').substring(0, 5);
-                      return res != 'https';
-                    });
-                    promise.resolve(filtered);
-                  }, function(error) {
-                    console.error(error);
-                    promise.reject(error);
-                  });
+                  promise.resolve(objs);
                 }, function(error) {
                   console.error(error);
                   promise.reject(error);
