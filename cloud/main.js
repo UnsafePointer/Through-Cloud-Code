@@ -208,7 +208,6 @@ function generateFacebookFeed(user) {
               URL = URL + encodeURIComponent('fields=source,from,name,created_time');
             }
             URL = URL + '&access_token=' + oauth_token;
-            console.log(URL);
             Parse.Cloud.httpRequest({
               method: 'GET',
               url: URL,
