@@ -424,7 +424,7 @@ Parse.Cloud.job("generateFeeds", function(request, status) {
   query.find().then(function(users) {
     var promises = [];
     _.each(users, function(user) {
-      promises.push(generateFacebookFeed(user));
+      promises.push(generateFeedsForUser(user));
     });
     return Parse.Promise.when(promises);
   }, function(error) {
