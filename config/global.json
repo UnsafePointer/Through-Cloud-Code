@@ -1,21 +1,17 @@
 {
     "applications": {
         "Through": {
-            "applicationId": "13M9oMhAklF3jK9XjjVZ8cHa4qOwQZqYFM6CiXLL", 
+            "applicationId": "13M9oMhAklF3jK9XjjVZ8cHa4qOwQZqYFM6CiXLL",
             "masterKey": "hx0Ep0FetJX185Jl09CvGDD0RYW3UNhIaycVHnZ6"
-        }, 
+        },
         "Through-Prod": {
-            "applicationId": "KQiyMjQMTLLYBN2wzEdJZwjNPgU5isrwmVQZtzZf", 
+            "applicationId": "KQiyMjQMTLLYBN2wzEdJZwjNPgU5isrwmVQZtzZf",
             "masterKey": "yYq2ObdytQD8qxWxu8HhrZJxmqhzVoPOJBCJqWoP"
-        }, 
-        "Through-Test": {
-            "applicationId": "9ITnzSGyHOgg76x2arpk0vz4kcpPRVlYG8NgNNqY", 
-            "masterKey": "GHKWgrDwaYCmWJhQKMN3oDnz0lLZaKTKv7738jQA"
-        }, 
+        },
         "_default": {
             "link": "Through"
         }
-    }, 
+    },
     "global": {
         "parseVersion": "1.2.18"
     }
