@@ -3,7 +3,7 @@ Through-Cloud-Code
 
 __Description:__  
 
-Through is an iPhone application that simplify the way you browse photos on social networks. Connect your Twitter and Facebook accounts and see all your photos in one place.
+Through is an iOS and Android application that simplify the way you browse photos on social networks. Connect your Twitter and Facebook accounts and see all your photos in one place.
 
 __Source Code:__  
 
